@@ -31,6 +31,13 @@ inline struct SimulationConfig
     int camera_height = 480;
     double camera_fps = 30.0;
 
+    std::string depth_camera_name;  // MuJoCo camera name for depth/pointcloud (empty = disabled)
+    int depth_camera_width = 320;
+    int depth_camera_height = 240;
+    double depth_camera_fps = 10.0;
+    int depth_camera_stride = 4;    // Sample every Nth pixel in each dimension (1 = every pixel)
+    std::string pointcloud_topic = "rt/pointcloud";
+
     void load_from_yaml(const std::string &filename)
     {
         auto cfg = YAML::LoadFile(filename);
@@ -55,6 +62,19 @@ inline struct SimulationConfig
                 camera_height = cfg["camera_height"].as<int>();
             if (cfg["camera_fps"])
                 camera_fps = cfg["camera_fps"].as<double>();
+
+            if (cfg["depth_camera_name"])
+                depth_camera_name = cfg["depth_camera_name"].as<std::string>();
+            if (cfg["depth_camera_width"])
+                depth_camera_width = cfg["depth_camera_width"].as<int>();
+            if (cfg["depth_camera_height"])
+                depth_camera_height = cfg["depth_camera_height"].as<int>();
+            if (cfg["depth_camera_fps"])
+                depth_camera_fps = cfg["depth_camera_fps"].as<double>();
+            if (cfg["depth_camera_stride"])
+                depth_camera_stride = cfg["depth_camera_stride"].as<int>();
+            if (cfg["pointcloud_topic"])
+                pointcloud_topic = cfg["pointcloud_topic"].as<std::string>();
         }
         catch(const std::exception& e)
         {

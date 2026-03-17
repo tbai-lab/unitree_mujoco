@@ -34,6 +34,7 @@
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
 #include "video_server.h"
+#include "pointcloud_server.h"
 #include "param.h"
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"
@@ -575,7 +576,8 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
 struct BridgeThreadArgs
 {
   mj::Simulate *sim;
-  GLFWwindow *camera_window; // may be nullptr if camera is not configured
+  GLFWwindow *camera_window;       // may be nullptr if camera is not configured
+  GLFWwindow *depth_camera_window; // may be nullptr if depth camera is not configured
 };
 
 void *UnitreeSdk2BridgeThread(void *arg)
@@ -623,6 +625,21 @@ void *UnitreeSdk2BridgeThread(void *arg)
         param::config.camera_fps);
     cam_renderer->start();
     video_servers = createVideoServers(cam_renderer);
+  }
+
+  // Start depth camera point cloud publisher if configured
+  std::unique_ptr<PointCloudPublisher> pointcloud_pub;
+  if (args->depth_camera_window && !param::config.depth_camera_name.empty())
+  {
+    pointcloud_pub = std::make_unique<PointCloudPublisher>(
+        m, d, args->sim->mtx, args->depth_camera_window,
+        param::config.depth_camera_name,
+        param::config.depth_camera_width,
+        param::config.depth_camera_height,
+        param::config.depth_camera_fps,
+        param::config.depth_camera_stride,
+        param::config.pointcloud_topic);
+    pointcloud_pub->start();
   }
 
   while (true)
@@ -727,7 +744,22 @@ int main(int argc, char **argv)
     }
   }
 
-  static BridgeThreadArgs bridge_args{sim.get(), camera_window};
+  // Create hidden GLFW window for depth camera / pointcloud rendering (must be on main thread)
+  GLFWwindow *depth_camera_window = nullptr;
+  if (!param::config.depth_camera_name.empty())
+  {
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    depth_camera_window = glfwCreateWindow(
+        param::config.depth_camera_width, param::config.depth_camera_height,
+        "depth_camera_offscreen", nullptr, nullptr);
+    glfwDefaultWindowHints();
+    if (!depth_camera_window)
+    {
+      std::cerr << "[PointCloud] Failed to create offscreen GLFW window" << std::endl;
+    }
+  }
+
+  static BridgeThreadArgs bridge_args{sim.get(), camera_window, depth_camera_window};
   std::thread unitree_thread(UnitreeSdk2BridgeThread, &bridge_args);
 
   // start physics thread

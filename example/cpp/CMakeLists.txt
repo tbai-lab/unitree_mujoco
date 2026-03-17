@@ -16,4 +16,7 @@ target_link_libraries(move_franka  unitree_sdk2)
 add_executable(video_client_franka video_client_franka.cpp)
 target_link_libraries(video_client_franka  unitree_sdk2)
 
+add_executable(pointcloud_to_png pointcloud_to_png.cpp)
+target_link_libraries(pointcloud_to_png  unitree_sdk2)
+
 SET(CMAKE_BUILD_TYPE Release)

@@ -18,3 +18,11 @@ enable_elastic_band: 0 # Virtual spring band, used for lifting h1
 # camera_width: 640             # Image width in pixels
 # camera_height: 480            # Image height in pixels
 # camera_fps: 30                # Rendering frame rate
+
+# Depth Camera / PointCloud publisher (publishes PointCloud2 via DDS)
+# depth_camera_name: "front_camera"  # Name of a <camera> element in the MJCF model (empty or absent = disabled)
+# depth_camera_width: 320            # Depth image width in pixels
+# depth_camera_height: 240           # Depth image height in pixels
+# depth_camera_fps: 10               # Depth rendering / publishing frame rate
+# depth_camera_stride: 4             # Sample every Nth pixel in each dimension (1 = every pixel, 4 = 16x fewer points)
+# pointcloud_topic: "rt/pointcloud"  # DDS topic name for PointCloud2 messages
