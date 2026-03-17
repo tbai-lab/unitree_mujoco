@@ -26,6 +26,11 @@ inline struct SimulationConfig
     int enable_elastic_band;
     int band_attached_link = 0;
 
+    std::string camera_name;  // MuJoCo camera name for video server (empty = disabled)
+    int camera_width = 640;
+    int camera_height = 480;
+    double camera_fps = 30.0;
+
     void load_from_yaml(const std::string &filename)
     {
         auto cfg = YAML::LoadFile(filename);
@@ -41,6 +46,15 @@ inline struct SimulationConfig
             joystick_bits = cfg["joystick_bits"].as<int>();
             print_scene_information = cfg["print_scene_information"].as<int>();
             enable_elastic_band = cfg["enable_elastic_band"].as<int>();
+
+            if (cfg["camera_name"])
+                camera_name = cfg["camera_name"].as<std::string>();
+            if (cfg["camera_width"])
+                camera_width = cfg["camera_width"].as<int>();
+            if (cfg["camera_height"])
+                camera_height = cfg["camera_height"].as<int>();
+            if (cfg["camera_fps"])
+                camera_fps = cfg["camera_fps"].as<double>();
         }
         catch(const std::exception& e)
         {

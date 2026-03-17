@@ -7,4 +7,7 @@ find_package(unitree_sdk2 REQUIRED)
 add_executable(stand_go2 stand_go2.cpp)
 target_link_libraries(stand_go2  unitree_sdk2)
 
+add_executable(video_client_go2 video_client_go2.cpp)
+target_link_libraries(video_client_go2  unitree_sdk2)
+
 SET(CMAKE_BUILD_TYPE Release)

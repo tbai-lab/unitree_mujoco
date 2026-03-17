@@ -33,6 +33,7 @@
 #include "simulate.h"
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
+#include "video_server.h"
 #include "param.h"
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"
@@ -571,8 +572,16 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
   exit(0);
 }
 
+struct BridgeThreadArgs
+{
+  mj::Simulate *sim;
+  GLFWwindow *camera_window; // may be nullptr if camera is not configured
+};
+
 void *UnitreeSdk2BridgeThread(void *arg)
 {
+  auto *args = static_cast<BridgeThreadArgs *>(arg);
+
   // Wait for mujoco data
   while (true)
   {
@@ -592,7 +601,7 @@ void *UnitreeSdk2BridgeThread(void *arg)
     body_id = mj_name2id(m, mjOBJ_BODY, "base_link");
   }
   param::config.band_attached_link = 6 * body_id;
-  
+
   std::unique_ptr<UnitreeSDK2BridgeBase> interface = nullptr;
   if (m->nu > NUM_MOTOR_IDL_GO) {
     interface = std::make_unique<G1Bridge>(m, d);
@@ -600,7 +609,22 @@ void *UnitreeSdk2BridgeThread(void *arg)
     interface = std::make_unique<Go2Bridge>(m, d);
   }
   interface->start();
-  
+
+  // Start camera rendering + video server if configured
+  std::shared_ptr<CameraRenderer> cam_renderer;
+  std::vector<std::unique_ptr<MujocoVideoServer>> video_servers;
+  if (args->camera_window && !param::config.camera_name.empty())
+  {
+    cam_renderer = std::make_shared<CameraRenderer>(
+        m, d, args->sim->mtx, args->camera_window,
+        param::config.camera_name,
+        param::config.camera_width,
+        param::config.camera_height,
+        param::config.camera_fps);
+    cam_renderer->start();
+    video_servers = createVideoServers(cam_renderer);
+  }
+
   while (true)
   {
     sleep(1);
@@ -673,6 +697,9 @@ int main(int argc, char **argv)
   // Load simulation configuration
   std::filesystem::path executable_dir = std::filesystem::path(getExecutableDir());
   std::filesystem::path config_path = (argc > 1) ? std::filesystem::path(argv[1]) : executable_dir / "config.yaml";
+  if (std::filesystem::is_directory(config_path)) {
+    config_path = config_path / "config.yaml";
+  }
   std::cerr << "Config path: " << config_path.string() << std::endl;
   param::config.load_from_yaml(config_path);
   param::helper(argc, argv);
@@ -685,7 +712,23 @@ int main(int argc, char **argv)
     std::make_unique<mj::GlfwAdapter>(),
     &cam, &opt, &pert, /* is_passive = */ false);
 
-  std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
+  // Create hidden GLFW window for camera offscreen rendering (must be on main thread)
+  GLFWwindow *camera_window = nullptr;
+  if (!param::config.camera_name.empty())
+  {
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    camera_window = glfwCreateWindow(
+        param::config.camera_width, param::config.camera_height,
+        "camera_offscreen", nullptr, nullptr);
+    glfwDefaultWindowHints();
+    if (!camera_window)
+    {
+      std::cerr << "[VideoServer] Failed to create offscreen GLFW window" << std::endl;
+    }
+  }
+
+  static BridgeThreadArgs bridge_args{sim.get(), camera_window};
+  std::thread unitree_thread(UnitreeSdk2BridgeThread, &bridge_args);
 
   // start physics thread
   std::thread physicsthreadhandle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());

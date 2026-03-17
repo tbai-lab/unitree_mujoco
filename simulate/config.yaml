@@ -12,3 +12,9 @@ joystick_bits: 16 # Some game controllers may only have 8-bit accuracy
 print_scene_information: 1 # Print link, joint and sensors information of robot
 
 enable_elastic_band: 0 # Virtual spring band, used for lifting h1
+
+# Camera / VideoServer (serves images to unitree_sdk2 VideoClient)
+# camera_name: "front_camera"  # Name of a <camera> element in the MJCF model (empty or absent = disabled)
+# camera_width: 640             # Image width in pixels
+# camera_height: 480            # Image height in pixels
+# camera_fps: 30                # Rendering frame rate
