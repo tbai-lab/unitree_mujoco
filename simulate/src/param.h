@@ -36,6 +36,8 @@ inline struct SimulationConfig
     int depth_camera_height = 240;
     double depth_camera_fps = 10.0;
     int depth_camera_stride = 4;    // Sample every Nth pixel in each dimension (1 = every pixel)
+    float depth_camera_min_distance = 0.1f;
+    float depth_camera_max_distance = 2.5f;
     std::string pointcloud_topic = "rt/pointcloud";
 
     void load_from_yaml(const std::string &filename)
@@ -73,6 +75,10 @@ inline struct SimulationConfig
                 depth_camera_fps = cfg["depth_camera_fps"].as<double>();
             if (cfg["depth_camera_stride"])
                 depth_camera_stride = cfg["depth_camera_stride"].as<int>();
+            if (cfg["depth_camera_min_distance"])
+                depth_camera_min_distance = cfg["depth_camera_min_distance"].as<float>();
+            if (cfg["depth_camera_max_distance"])
+                depth_camera_max_distance = cfg["depth_camera_max_distance"].as<float>();
             if (cfg["pointcloud_topic"])
                 pointcloud_topic = cfg["pointcloud_topic"].as<std::string>();
         }

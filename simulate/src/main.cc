@@ -638,7 +638,9 @@ void *UnitreeSdk2BridgeThread(void *arg)
         param::config.depth_camera_height,
         param::config.depth_camera_fps,
         param::config.depth_camera_stride,
-        param::config.pointcloud_topic);
+        param::config.pointcloud_topic,
+        param::config.depth_camera_min_distance,
+        param::config.depth_camera_max_distance);
     pointcloud_pub->start();
   }
 

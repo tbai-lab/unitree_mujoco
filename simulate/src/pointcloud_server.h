@@ -37,11 +37,14 @@ public:
                         const std::string &camera_name,
                         int width, int height, double fps,
                         int stride = 4,
-                        const std::string &topic = "rt/pointcloud")
+                        const std::string &topic = "rt/pointcloud",
+                        float min_distance = 0.1f,
+                        float max_distance = 2.5f)
         : model_(model), data_(data), sim_mtx_(sim_mtx),
           gl_window_(gl_window), camera_name_(camera_name),
           width_(width), height_(height), stride_(std::max(stride, 1)),
-          publish_interval_(1.0 / fps), running_(false), topic_(topic) {}
+          publish_interval_(1.0 / fps), running_(false), topic_(topic),
+          min_distance_(min_distance), max_distance_(max_distance) {}
 
     ~PointCloudPublisher() { stop(); }
 
@@ -131,7 +134,8 @@ private:
                   << "' depth " << width_ << "x" << height_
                   << " stride=" << stride_
                   << " (" << sampled_w << "x" << sampled_h << " sampled)"
-                  << " @ " << (1.0 / publish_interval_) << " fps → topic '" << topic_ << "'" << std::endl;
+                  << " @ " << (1.0 / publish_interval_) << " fps → topic '" << topic_ << "'"
+                  << " distance=[" << min_distance_ << ", " << max_distance_ << "]" << std::endl;
 
         while (running_)
         {
@@ -166,6 +170,10 @@ private:
 
                     // Convert OpenGL normalized depth to linear depth (meters)
                     float z = znear * zfar / (zfar - d * (zfar - znear));
+
+                    // Distance filtering
+                    if (z < min_distance_ || z > max_distance_)
+                        continue;
 
                     // Back-project to 3D (camera frame: z forward, x right, y down)
                     float x = static_cast<float>((static_cast<double>(u) - cx) * z / fx);
@@ -229,4 +237,6 @@ private:
     std::atomic<bool> running_;
     std::thread thread_;
     std::string topic_;
+    float min_distance_;
+    float max_distance_;
 };
